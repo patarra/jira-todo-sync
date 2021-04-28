@@ -1,5 +1,4 @@
-The MIT License (MIT)
-
+/*
 Copyright © 2021 Jose Manuel Felguera Rodriguez <patarra@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,3 +18,38 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+*/
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+// getCmd represents the get command
+var getCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Gets your assigned tasks from JIRA",
+	Long:  `Gets your assigned tasks from JIRA`,
+	Run: func(cmd *cobra.Command, args []string) {
+		//x, _ := cmd.Flags().GetString("jira-server")
+		z := viper.GetViper().GetString("jira-server")
+		fmt.Println("jira server is: ", z)
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(getCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
