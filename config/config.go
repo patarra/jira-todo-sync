@@ -14,8 +14,7 @@ type JiraConfig struct {
 }
 
 type TodoistConfig struct {
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
+	Token string `mapstructure:"token"`
 }
 
 type Config struct {

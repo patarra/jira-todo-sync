@@ -6,21 +6,33 @@ import (
 )
 
 var blue = color.New(color.Bold,color.FgBlue)
+var yellow = color.New(color.Bold,color.FgYellow)
+var red = color.New(color.Bold,color.FgRed)
 
 func PrintInfoF(format string, a ...interface{}){
 	blue.Print("[INFO] ")
+	doPrint(format,a)
+}
+
+func PrintWarnF(format string, a ...interface{}){
+	yellow.Print("[WARN] ")
+	doPrint(format,a)
+}
+
+func PrintErrorF(format string, a ...interface{}){
+	red.Print("[ERROR] ")
+	doPrint(format,a)
+}
+
+func PrintError(err error){
+	red.Print("[ERROR] ")
+	fmt.Println(err)
+}
+
+func doPrint(format string, a ...interface{}){
 	if len(a) > 0{
 		fmt.Printf(format + "\n",a)
 	}else{
 		fmt.Println(format)
 	}
-}
-
-func PrintWarnF(format string, a ...interface{}){
-	color.Yellow("[WARN] " + format,a)
-}
-
-
-func PrintErrorF(format string, a ...interface{}){
-	color.Red("[ERROR] " + format,a)
 }
