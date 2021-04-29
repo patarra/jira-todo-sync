@@ -23,12 +23,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
+	"github.com/mitchellh/go-homedir"
+	"github.com/patarra/jira-todo-sync/config"
 	"github.com/spf13/cobra"
-
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
+	"os"
 )
 
 var cfgFile string
@@ -59,22 +57,12 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.jira-todo-sync.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().StringP("jira-server", "", "http://jira.attlasian.net", "Jira Server to connect")
-	rootCmd.Flags().StringP("jira-username", "", "", "Jira username")
-	rootCmd.Flags().StringP("jira-password", "", "", "Jira password")
-
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.jira-todo-sync)")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
+	if cfgFile == "" {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
@@ -83,17 +71,13 @@ func initConfig() {
 		}
 
 		// Search config in home directory with name ".jira-todo-sync" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".jira-todo-sync")
-		viper.BindPFlag("jira-server", rootCmd.PersistentFlags().Lookup("jira-server"))
-		viper.BindPFlag("jira-username", rootCmd.PersistentFlags().Lookup("jira-username"))
-		viper.BindPFlag("jira-password", rootCmd.PersistentFlags().Lookup("jira-password"))
+		cfgFile = fmt.Sprintf("%s/%s", home, ".jira-todo-sync")
 	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	_,err := config.InitConfig(cfgFile)
+	if err != nil{
+		//todo: show coloured errors
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
+

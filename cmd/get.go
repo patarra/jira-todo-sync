@@ -23,9 +23,11 @@ package cmd
 
 import (
 	"fmt"
-
+	"github.com/patarra/jira-todo-sync/jira"
+	"github.com/patarra/jira-todo-sync/utils"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	jira2 "gopkg.in/andygrunwald/go-jira.v1"
+	"os"
 )
 
 // getCmd represents the get command
@@ -34,10 +36,25 @@ var getCmd = &cobra.Command{
 	Short: "Gets your assigned tasks from JIRA",
 	Long:  `Gets your assigned tasks from JIRA`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//x, _ := cmd.Flags().GetString("jira-server")
-		z := viper.GetViper().GetString("jira-server")
-		fmt.Println("jira server is: ", z)
+		client, err := jira.GetJiraClient()
+		if err != nil{
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		issues, err := client.GetIssuesAssignedNotClosed()
+		if len(issues) <= 0{
+			// jira could return [] if the credentials are not valid
+			utils.PrintInfoF("No results from JIRA.")
+			utils.PrintInfoF("Jira returns and empty search result if the credentials are not valid, please check them")
+		}
+		printIssues(issues)
 	},
+}
+
+func printIssues(issues []jira2.Issue){
+	for _,issue := range issues {
+		fmt.Printf("Issue: %s \n", issue.Key)
+	}
 }
 
 func init() {
