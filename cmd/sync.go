@@ -17,48 +17,34 @@ package cmd
 
 import (
 	"fmt"
-	todo_connections "github.com/patarra/jira-todo-sync/todo-connections"
-	"github.com/patarra/jira-todo-sync/utils"
-	"os"
-
+	"github.com/patarra/jira-todo-sync/spi"
 	"github.com/spf13/cobra"
 )
-
-type SyncImporter interface{
-
-}
 
 // syncCmd represents the sync command
 var syncCmd = &cobra.Command{
 	Use:   "sync",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Sync tasks to your favourite todo app",
+	Long:  "Sync tasks to your favourite todo app",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("sync called")
-		_, err:=todo_connections.GetTodoManager("todoist")
-		if err!= nil{
-			utils.PrintError(err)
-			os.Exit(1)
-		}
-		fmt.Print("worked")
+		fmt.Println("Syncing")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(syncCmd)
 
-	// Here you will define your flags and configuration settings.
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// syncCmd.PersistentFlags().String("foo", "", "A help for foo")
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// syncCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// set up flags for providers
+	for _, i := range spi.GetAllTodoManagers() {
+		flags := i.GetFlagsDescriptions()
+		for _, f := range flags {
+			syncCmd.Flags().StringP(f.Name, f.Shorthand, f.DefaultValue, f.Description)
+			if f.Required {
+				//ignore errors
+				_ = syncCmd.MarkFlagRequired(f.Name)
+			}
+		}
+	}
 }
