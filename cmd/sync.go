@@ -16,8 +16,11 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"os"
+
+	"github.com/patarra/jira-todo-sync/jira"
 	"github.com/patarra/jira-todo-sync/spi"
+	"github.com/patarra/jira-todo-sync/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -27,14 +30,40 @@ var syncCmd = &cobra.Command{
 	Short: "Sync tasks to your favourite todo app",
 	Long:  "Sync tasks to your favourite todo app",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Syncing")
+		syncApp, _ := cmd.Flags().GetString("to")
+		if !spi.IsTodoAppAvailable(syncApp) {
+			utils.PrintErrorF("%s app is invalid", syncApp)
+			cmd.Help()
+		}
+		// get issues from jira
+		client, err := jira.GetJiraClient()
+		if err != nil {
+			utils.PrintError(err)
+			os.Exit(1)
+		}
+		issues, err := client.GetIssuesAssignedNotClosed()
+		if err != nil {
+			utils.PrintError(err)
+			os.Exit(1)
+		}
+		app, err := spi.GetTodoManager(syncApp)
+		if err != nil {
+			utils.PrintError(err)
+			os.Exit(1)
+		}
+		err = app.SyncIssues(issues, spi.GetFlagValues(cmd, app.GetFlagsDescriptions()))
+		if err != nil{
+			utils.PrintError(err)
+			os.Exit(1)
+		}
+		os.Exit(0)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(syncCmd)
-
-
+	syncCmd.Flags().StringP("to", "t", "", "Todo app -> (todoist)")
+	_ = syncCmd.MarkFlagRequired("to")
 
 	// set up flags for providers
 	for _, i := range spi.GetAllTodoManagers() {
