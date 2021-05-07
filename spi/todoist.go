@@ -3,6 +3,7 @@ package spi
 import (
 	"context"
 	"fmt"
+	"github.com/patarra/jira-todo-sync/utils"
 	"strings"
 
 	todoistlib "github.com/kobtea/go-todoist/todoist"
@@ -54,13 +55,32 @@ func (t *todoist) SyncIssues(issues []jira.Issue, flagValues map[string]string )
 		return err
 	}
 	for _, i := range issues {
-		if existJiraTicket(existentItems, i.Key) {
-			fmt.Printf("Key %s not exist.Create...", i.Key)
+		if existJiraTicketInTodoist(existentItems, i.Key) {
+			utils.PrintInfoF("%s already exists", i.Key)
 		} else {
-			fmt.Printf("Key %s exist.Ignoring...", i.Key)
+			err = t.createTodoistTask(i, flagValues["todoist-project"], flagValues["todoist-label"])
+			if err != nil {
+				utils.PrintErrorF("%s failed to create in todoist: %s", i.Key, err)
+			}else{
+				utils.PrintSuccessF("%s created", i.Key)
+			}
 		}
 	}
-	return nil
+	return t.client.Commit(context.Background())
+}
+
+func (t *todoist) createTodoistTask(i jira.Issue, projectName string, labelName string ) error{
+	project := t.findProject(projectName)
+	label, _ := t.findLabel(labelName)
+	opts := todoistlib.NewItemOpts{
+		Labels: []todoistlib.ID{label.ID},
+	}
+	if project != nil {
+		opts.ProjectID=project.ID
+	}
+	item,_ := todoistlib.NewItem(fmt.Sprintf("%s - %s", i.Key, i.Fields.Summary), &opts)
+	_, err := t.client.Item.Add(*item)
+	return err
 }
 
 func (t *todoist) getTodoistClient() (*todoistlib.Client, error) {
@@ -84,7 +104,7 @@ func (t *todoist) getTodoistClient() (*todoistlib.Client, error) {
 	return t.client, nil
 }
 
-func existJiraTicket(items []todoistlib.Item, identifier string) bool {
+func existJiraTicketInTodoist(items []todoistlib.Item, identifier string) bool {
 	for _, i := range items {
 		if strings.HasPrefix(i.Content, identifier) {
 			return true
@@ -118,4 +138,12 @@ func (t *todoist) findLabel(labelName string) (*todoistlib.Label, error) {
 		}
 	}
 	return nil, fmt.Errorf("todoist: label %s not found", labelName)
+}
+
+func (t *todoist) findProject(projectName string) *todoistlib.Project {
+	project := t.client.Project.FindByName(projectName)
+	if len(project) > 0 {
+		return &project[0]
+	}
+	return nil
 }
